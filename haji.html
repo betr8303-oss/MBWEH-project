@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G45 Multi-Target Monitor Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body, html { width: 100%; height: 100%; background: #0b0f19; color: #fff; display: flex; overflow: hidden; }
+        
+        /* Sidebar Daftar Target */
+        #sidebar {
+            width: 320px;
+            height: 100%;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 20px;
+            background: #0f172a;
+            border-bottom: 1px solid #334155;
+        }
+        .sidebar-header h2 { font-size: 18px; color: #38bdf8; }
+        .target-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .target-item {
+            background: #0f172a;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid #334155;
+            transition: all 0.2s;
+        }
+        .target-item:hover { border-color: #38bdf8; background: #172033; }
+        .target-item.active { border-color: #38bdf8; background: #1e3a8a; }
+        .target-title { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
+        .target-info { font-size: 12px; color: #94a3b8; }
+
+        /* Area Utama Pemutar Video */
+        #main-content {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: #000;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transform: scaleX(-1);
+        }
+        #status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: #ffaa00;
+            font-family: monospace;
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid #ffaa00;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR DAFTAR TARGET -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>Daftar Target (Riwayat)</h2>
+        </div>
+        <div class="target-list" id="targetListContainer">
+            <p style="padding: 15px; color: #64748b; font-size: 13px;">Menunggu target masuk...</p>
+        </div>
+    </div>
+
+    <!-- AREA PEMUTAR VIDEO -->
+    <div id="main-content">
+        <div id="status">STATUS: PILIH TARGET DARI DAFTAR SEBELAH KIRI</div>
+        <video id="player" controls autoplay playsinline></video>
+    </div>
+
+    <!-- Firebase SDK v9 Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBc4gDdIRxCR6H7RGBe7ejLyI6SrIRyxo0",
+            authDomain: "haij-4beb7.firebaseapp.com",
+            databaseURL: "https://haij-4beb7-default-rtdb.firebaseio.com",
+            projectId: "haij-4beb7",
+            storageBucket: "haij-4beb7.firebasestorage.app",
+            messagingSenderId: "843252587335",
+            appId: "1:843252587335:android:438d0f98d2a2505c034a62"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        const listContainer = document.getElementById('targetListContainer');
+        const videoPlayer = document.getElementById('player');
+        const statusDiv = document.getElementById('status');
+
+        // Ambil semua data target dari Firebase secara real-time
+        onValue(ref(db, 'targets'), (snapshot) => {
+            const data = snapshot.val();
+            listContainer.innerHTML = '';
+
+            if (!data) {
+                listContainer.innerHTML = '<p style="padding: 15px; color: #64748b; font-size: 13px;">Belum ada target yang masuk.</p>';
+                return;
+            }
+
+            // Urutkan target dari yang paling baru
+            const sortedTargets = Object.entries(data).reverse();
+
+            sortedTargets.forEach(([id, target], index) => {
+                const dateObj = new Date(target.time);
+                const timeString = dateObj.toLocaleTimeString() + ' - ' + dateObj.toLocaleDateString();
+
+                const item = document.createElement('div');
+                item.className = 'target-item';
+                item.innerHTML = `
+                    <div class="target-title">Target #${sortedTargets.length - index}</div>
+                    <div class="target-info">Kode: <b>${target.code}</b></div>
+                    <div class="target-info">${timeString}</div>
+                `;
+
+                // Jika diklik, putar video target tersebut (bisa ditonton berulang kali)
+                item.onclick = () => {
+                    document.querySelectorAll('.target-item').forEach(el => el.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    videoPlayer.src = target.video;
+                    statusDiv.innerText = `MEMUTAR: TARGET [KODE: ${target.code}]`;
+                    statusDiv.style.color = "#00ff00";
+                    statusDiv.style.borderColor = "#00ff00";
+                };
+
+                listContainer.appendChild(item);
+            });
+        });
+    </script>
+</body>
+</html>
