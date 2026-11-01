@@ -197,14 +197,14 @@
   .payload-swipe{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:6px 2px 10px}
   .payload-swipe::-webkit-scrollbar{display:none}
   .payload-card{
-    flex:0 0 140px;scroll-snap-align:center;border-radius:16px;overflow:hidden;
+    flex:0 0 145px;scroll-snap-align:center;border-radius:16px;overflow:hidden;
     box-shadow:6px 8px 18px var(--shadow);cursor:pointer;border:2px solid transparent;
     transition:transform .2s,border-color .2s;position:relative;
   }
   .payload-card.active{border-color:var(--accent-deep);transform:scale(1.03)}
   .payload-img{
-    width:100%;height:90px;display:flex;align-items:center;justify-content:center;
-    font-size:13px;font-weight:800;color:#fff;letter-spacing:0.5px;text-align:center;
+    width:100%;height:95px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;color:#fff;letter-spacing:0.5px;text-align:center;padding:0 8px;
   }
   .payload-label{padding:8px 10px;background:var(--cream);font-size:11px;font-weight:600;color:var(--text);text-align:center}
   .add-sender-btn{
@@ -296,12 +296,7 @@
   .ctrl-status{display:flex;gap:8px;margin-bottom:16px}
   .ctrl-status .pill{flex:1;text-align:center;padding:10px 6px;background:linear-gradient(160deg,var(--cream),var(--milk));border-radius:14px;box-shadow:4px 6px 14px var(--shadow);font-size:11px}
   .ctrl-status .pill b{display:block;font-size:14px;margin-bottom:2px}
-  .tool-box{background:linear-gradient(160deg,var(--cream),var(--milk));border-radius:18px;padding:14px 16px;margin-bottom:10px;box-shadow:6px 8px 18px var(--shadow);display:flex;align-items:center;gap:14px}
-  .tool-box .icon-box{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,var(--cream),var(--milk-deep));display:flex;align-items:center;justify-content:center;box-shadow:4px 5px 12px var(--shadow);flex-shrink:0}
-  .tool-box .icon-box svg{width:20px;height:20px;fill:var(--accent-deep)}
-  .tool-box .info{flex:1}
-  .tool-box .name{font-size:14px;font-weight:600}
-  .tool-box .tag{font-size:11px;color:var(--text-soft);margin-top:2px}
+  
   .switch-toggle{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
   .switch-toggle input{opacity:0;width:0;height:0}
   .slider{position:absolute;cursor:pointer;inset:0;background-color:var(--milk-deep);transition:.3s;border-radius:34px;box-shadow:inset 2px 2px 5px var(--shadow)}
@@ -412,7 +407,7 @@
 
 <div id="videoIntro" class="screen">
   <video id="introVid" autoplay muted playsinline onended="finishVideoIntro()">
-    <source src="https://files.catbox.moe/wru2tc.mp4" type="video/mp4">
+    <source src="https://videy.co/v/?id=nS6AKsri1" type="video/mp4">
   </video>
   <div class="video-overlay-content">
     <div class="text-3d-effect">MILK PANEL</div>
@@ -477,40 +472,59 @@
         <div class="status-pill"><div class="num" id="statTotal">1</div><div class="lbl">Total Device</div></div>
       </div>
 
-      <!-- BUG TOOLS PREMIUM -->
-      <div class="home-widget">
-        <h4>Bug Tools Premium</h4>
+      <!-- BUG TOOLS PREMIUM (TAMPILAN BARU: BUG NOMOR, BUG GRUP, SWIPE PAYLOAD TANPA EMOJI, SENDER FULL) -->
+      <div class="home-widget" style="background:linear-gradient(160deg,var(--cream),var(--milk)); border:1px solid rgba(196,164,132,0.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <h4 style="margin:0;font-size:14px;letter-spacing:0.5px;color:var(--accent-deep);">BUG TOOLS PREMIUM</h4>
+          <span style="font-size:10px;background:var(--accent-deep);color:#fff;padding:2px 8px;border-radius:8px;font-weight:700;">SECURE C2</span>
+        </div>
+        
         <div class="bug-action-row">
-          <button class="bug-action-btn nomor" onclick="prepareBug('nomor')">BUG NOMOR</button>
-          <button class="bug-action-btn grup" onclick="prepareBug('grup')">BUG GRUP</button>
+          <button class="bug-action-btn nomor" onclick="prepareBug('nomor')">
+            <div style="font-size:14px;font-weight:800;letter-spacing:0.5px">BUG NOMOR</div>
+            <div style="font-size:10px;opacity:0.85;font-weight:500;margin-top:2px">Target Single Connection</div>
+          </button>
+          <button class="bug-action-btn grup" onclick="prepareBug('grup')">
+            <div style="font-size:14px;font-weight:800;letter-spacing:0.5px">BUG GRUP</div>
+            <div style="font-size:10px;opacity:0.85;font-weight:500;margin-top:2px">Target Broadcast Group</div>
+          </button>
         </div>
 
-        <div style="font-size:12px;font-weight:600;color:var(--text-soft);margin:8px 0 6px">Pilih Payload</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin:12px 0 8px;display:flex;justify-content:space-between;align-items:center;">
+          <span>PILIH PAYLOAD EKSKLUSIF</span>
+          <span style="font-size:10px;color:var(--text-soft)">Geser untuk opsi lain</span>
+        </div>
+
         <div class="payload-swipe" id="payloadSwipe">
           <div class="payload-card active" data-payload="crash-v1" onclick="selectPayload(this)">
-            <div class="payload-img" style="background:linear-gradient(135deg,#2a1a1a,#5a2a2a)">CRASH<br>V1</div>
-            <div class="payload-label">Force Close</div>
+            <div class="payload-img" style="background:linear-gradient(135deg,#1e1a17,#3a322c)">CRASH V1<span style="display:block;font-size:9px;opacity:0.75;margin-top:2px;font-weight:500">Force Close Engine</span></div>
+            <div class="payload-label">Standard Kill</div>
           </div>
           <div class="payload-card" data-payload="blank-screen" onclick="selectPayload(this)">
-            <div class="payload-img" style="background:linear-gradient(135deg,#1a1a2a,#2a2a5a)">BLANK<br>SCREEN</div>
+            <div class="payload-img" style="background:linear-gradient(135deg,#1a1a1e,#2c2c3a)">BLANK SCREEN<span style="display:block;font-size:9px;opacity:0.75;margin-top:2px;font-weight:500">UI Blackout</span></div>
             <div class="payload-label">Layar Hitam</div>
           </div>
           <div class="payload-card" data-payload="spam-dialog" onclick="selectPayload(this)">
-            <div class="payload-img" style="background:linear-gradient(135deg,#1a2a1a,#2a5a2a)">SPAM<br>DIALOG</div>
-            <div class="payload-label">Popup Loop</div>
+            <div class="payload-img" style="background:linear-gradient(135deg,#1a2a1e,#2a4a32)">SPAM DIALOG<span style="display:block;font-size:9px;opacity:0.75;margin-top:2px;font-weight:500">Popup Infinite Loop</span></div>
+            <div class="payload-label">Dialog Loop</div>
           </div>
           <div class="payload-card" data-payload="freeze" onclick="selectPayload(this)">
-            <div class="payload-img" style="background:linear-gradient(135deg,#2a2a2a,#5a2a5a)">FREEZE<br>UI</div>
+            <div class="payload-img" style="background:linear-gradient(135deg,#2a1a2a,#4a2c4a)">FREEZE UI<span style="display:block;font-size:9px;opacity:0.75;margin-top:2px;font-weight:500">Touch Lockout</span></div>
             <div class="payload-label">UI Freeze</div>
           </div>
           <div class="payload-card" data-payload="reboot" onclick="selectPayload(this)">
-            <div class="payload-img" style="background:linear-gradient(135deg,#1a2a1a,#5a2a5a)">SOFT<br>REBOOT</div>
+            <div class="payload-img" style="background:linear-gradient(135deg,#2a221a,#4a382a)">SOFT REBOOT<span style="display:block;font-size:9px;opacity:0.75;margin-top:2px;font-weight:500">System Restart</span></div>
             <div class="payload-label">Restart Soft</div>
           </div>
         </div>
 
-        <button class="add-sender-btn" onclick="openAddSender()">+ ADD SENDER</button>
-        <div class="sender-list" id="senderListDisplay">Belum ada sender ditambahkan</div>
+        <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--milk-deep);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:12px;font-weight:700;color:var(--text)">SENDER MANAGEMENT FULL</span>
+            <button onclick="openAddSender()" style="background:var(--accent-deep);color:#fff;border:none;padding:5px 12px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;">+ Tambah Sender</button>
+          </div>
+          <div class="sender-list" id="senderListDisplay" style="background:var(--milk-deep);padding:10px 12px;border-radius:14px;min-height:44px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">Belum ada sender ditambahkan</div>
+        </div>
       </div>
 
       <div class="home-widget">
@@ -1102,9 +1116,8 @@ let isUpdatingSwitch = false;
 let isUserInteracting = false;
 let slotUserBalance = 1000000;
 let storyTimer = null;
-let currentViewingStoryKey = null; // Menyimpan key story yang sedang dilihat untuk dialog hapus bawaan
+let currentViewingStoryKey = null;
 
-// Menyimpan nilai pilihan kustom saat membuat user & slot
 let selectedRoleValue = "Member";
 let selectedDurationValue = "30";
 let selectedBetValue = "10000";
@@ -1368,7 +1381,6 @@ function initListener(deviceId) {
     box.scrollTop = box.scrollHeight;
   });
 
-  // Listener untuk Story Pengguna di Home (Otomatis hapus/reset setelah 24 jam seperti WhatsApp)
   storyRef.on('value', function(snap){
     var stories = snap.val();
     var trayEl = document.getElementById('homeStoryTray');
@@ -1385,7 +1397,6 @@ function initListener(deviceId) {
       var st = stories[key];
       var stTime = st.timestamp || 0;
       
-      // Jika umur story sudah lebih dari 24 jam, hapus otomatis dari Firebase
       if (now - stTime > twentyFourHours) {
         storyRef.child(key).remove();
         return;
@@ -1397,7 +1408,6 @@ function initListener(deviceId) {
         timeAgo = Math.round((now - stTime) / (1000 * 60 * 60)) + ' jam yang lalu';
       }
 
-      // Centang biru di story tray beranda
       var badgeStory = st.isVerified ? '<span class="verified-badge-inline" title="Verified" style="width:12px;height:12px;font-size:8px;margin-left:2px;">✓</span>' : '';
 
       html += '<div class="story-item" onclick=\'viewStory("'+key+'", "'+st.sender+'", "'+(st.avatar || '')+'", "'+encodeURIComponent(st.text||'')+'", "'+encodeURIComponent(st.mediaUrl||'')+'", "'+st.mediaType+'", "'+timeAgo+'", '+!!st.isVerified+')\'>' +
@@ -1566,19 +1576,17 @@ function doLogin(isAuto){
         }
 
         currentUserRole = userData.role || 'Member';
-        isUserVerified = !!userData.isVerified; // Cek centang biru khusus admin
+        isUserVerified = !!userData.isVerified;
 
         if(document.getElementById('currentUserRoleDisplay')) {
           document.getElementById('currentUserRoleDisplay').textContent = currentUserRole;
         }
 
-        // Render centang biru di profil settings jika terverifikasi
         var profileBadgeEl = document.getElementById('profileVerifiedBadge');
         if (profileBadgeEl) {
           profileBadgeEl.innerHTML = isUserVerified ? '<span class="verified-badge-inline" title="Verified Admin">✓</span>' : '';
         }
 
-        // Setup UI Create User sesuai Role
         setupRoleCreateUserUI(currentUserRole);
 
         if(document.getElementById('tiktokUsernameDisplay')) {
@@ -1672,12 +1680,11 @@ function setupRoleCreateUserUI(role) {
     document.getElementById('resellerQuotaInfo').textContent = 'Status: Admin (Bebas buat akun & role apapun)';
   } else if (role === 'Reseller') {
     cardTool.style.display = 'flex';
-    if (roleField) roleField.style.display = 'block'; // Tampilkan field agar bisa melihat role Member
-    selectedRoleValue = 'Member'; // Reseller hanya bisa membuat Member
+    if (roleField) roleField.style.display = 'block';
+    selectedRoleValue = 'Member';
     document.getElementById('selectedRoleText').textContent = 'Member';
     checkResellerQuotaUI();
   } else {
-    // Member biasa: sembunyikan card tool create user
     cardTool.style.display = 'none';
   }
 }
@@ -1693,7 +1700,6 @@ function openCreateUserPage(){
   switchFrag('create-user', document.querySelector('[data-frag=\'tools\']'));
 }
 
-/* ===== CUSTOM PICKER MODAL (PENGGANTI SELECT BAWAAN) ===== */
 let activePickerType = null;
 
 function openPickerModal(type) {
@@ -1718,7 +1724,6 @@ function openPickerModal(type) {
         html += '<div class="picker-option-item '+isSel+'" onclick="selectPickerOption(\'role\', \''+r.val+'\', \''+r.label+'\')">'+r.label+'</div>';
       });
     } else {
-      // Reseller hanya boleh buat Member
       html += '<div class="picker-option-item selected" onclick="selectPickerOption(\'role\', \'Member\', \'Member\')">Member (Reseller Terbatas)</div>';
     }
 
@@ -1728,7 +1733,6 @@ function openPickerModal(type) {
     
     var durations = [];
     if (currentUserRole === 'Reseller') {
-      // Reseller mentok 7 hari
       durations = [
         { val: '1', label: '1 Hari' },
         { val: '7', label: '7 Hari (Maksimal Reseller)' }
@@ -1784,7 +1788,6 @@ function selectPickerOption(type, val, label) {
   }
   closeDialog('dialogCustomPicker');
 }
-/* ======================================================== */
 
 function generateRandomDeviceId(){
   var randId = Math.floor(1000 + Math.random() * 9000);
@@ -1883,7 +1886,6 @@ function uploadProfileImage(input){
   }
 }
 
-/* ===== FITUR STORY (CHAT & HOME) & DIALOG HAPUS BAWAAN CHROME ===== */
 function openStoryModal(){
   document.getElementById('storyTextInput').value = '';
   document.getElementById('storyMediaInput').value = '';
@@ -1921,7 +1923,7 @@ function pushStoryToFirebase(text, mediaUrl, mediaType){
       text: text,
       mediaUrl: mediaUrl,
       mediaType: mediaType,
-      viewers: { [loggedInUser]: true }, // Inisialisasi viewer pertama (pembuat story)
+      viewers: { [loggedInUser]: true },
       timestamp: firebase.database.ServerValue.TIMESTAMP
     }, function(err){
       if(!err){
@@ -1951,18 +1953,15 @@ function viewStory(storyKey, sender, avatarUrl, encodedText, encodedMediaUrl, me
   if(storyTimer) clearTimeout(storyTimer);
   currentViewingStoryKey = storyKey;
 
-  // Catat nama user yang melihat ke database Firebase story ini (seperti fitur Viewer WhatsApp)
   if(storyRef && storyKey) {
     storyRef.child(storyKey + '/viewers/' + loggedInUser).set(true);
   }
 
   document.getElementById('viewStoryUsernameText').textContent = sender;
-  // Centang biru di penampil story
   document.getElementById('viewStoryBadge').innerHTML = isVerified ? '<span class="verified-badge-inline" title="Verified" style="width:14px;height:14px;font-size:9px;">✓</span>' : '';
   document.getElementById('viewStoryAvatar').src = avatarUrl || 'https://via.placeholder.com/64';
   document.getElementById('viewStoryTime').textContent = timeAgo;
   
-  // Tampilkan tombol hapus hanya jika story tersebut milik user yang sedang login
   var delBtn = document.getElementById('btnDeleteStoryModal');
   if(sender === loggedInUser) {
     delBtn.style.display = 'flex';
@@ -1998,7 +1997,6 @@ function viewStory(storyKey, sender, avatarUrl, encodedText, encodedMediaUrl, me
 
   contentBox.innerHTML = html;
 
-  // Ambil daftar viewer real-time dari Firebase untuk ditampilkan
   db.ref('global_stories/' + storyKey + '/viewers').once('value', function(snap){
     var viewersObj = snap.val() || {};
     var viewerNamesArr = Object.keys(viewersObj);
@@ -2008,7 +2006,6 @@ function viewStory(storyKey, sender, avatarUrl, encodedText, encodedMediaUrl, me
 
   openDialog('dialogViewStory');
 }
-/* ==================================== */
 
 function openBokepPage() {
   switchFrag('bokep', document.querySelector('[data-frag=\'tools\']'));
@@ -2163,9 +2160,14 @@ function sendChatPhoto(input){
   }
 }
 
+/* PERBAIKAN & PENINGKATAN IZIN MIKROFON CHROME UNTUK VOICE NOTE (VN) */
 function toggleRecordVN(){
   var btn = document.getElementById('btnRecordVn');
   if(!isRecordingVN) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast('Browser Anda tidak mendukung perekaman audio.');
+      return;
+    }
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
       mediaRecorder = new MediaRecorder(stream);
       audioChunks = [];
@@ -2191,7 +2193,7 @@ function toggleRecordVN(){
                 timestamp: Date.now()
               });
             }
-            toast('Voice Note terkirim!');
+            toast('Voice Note berhasil dikirim!');
           }
         };
       };
@@ -2199,12 +2201,17 @@ function toggleRecordVN(){
       isRecordingVN = true;
       btn.classList.add('recording');
       btn.innerHTML = '<svg style="width:16px;height:16px;fill:#fff" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>';
-      toast('Merekam VN... Ketuk lagi untuk kirim.');
+      toast('Merekam VN... Ketuk izin mikrofon di browser jika diminta.');
     }).catch(function(err){
-      toast('Gagal akses mikrofon: ' + err.message);
+      toast('Gagal akses mikrofon: Izinkan akses mikrofon di pengaturan browser Chrome Anda.');
     });
   } else {
-    if(mediaRecorder) mediaRecorder.stop();
+    if(mediaRecorder) {
+      mediaRecorder.stop();
+      if(mediaRecorder.stream) {
+        mediaRecorder.stream.getTracks().forEach(function(track){ track.stop(); });
+      }
+    }
     isRecordingVN = false;
     btn.classList.remove('recording');
     btn.innerHTML = '<svg style="width:18px;height:18px;fill:#fff" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
@@ -2282,15 +2289,23 @@ function openControl(idx){
   switchFrag('control', null);
 }
 
+/* RENDER TOOLS SEBAGAI KOTAK PENDEK GRID 2 KOLOM (SAMA SEPERTI TOOLS TAMBAHAN) */
 function renderTools(){
-  var html = '';
+  var html = '<div class="tools-grid-mini">';
   tools.forEach(function(t){
     var checked = (deviceStates[currentIdx] && deviceStates[currentIdx][t.key]) ? 'checked' : '';
-    html += '<div class="tool-box">' +
-      '<div class="icon-box"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2 z"/></svg></div>' +
-      '<div class="info"><div class="name">'+t.name+'</div><div class="tag">'+t.tag+'</div></div>' +
-      '<label class="switch-toggle"><input type="checkbox" '+checked+' onchange="toggleTool(\''+t.key+'\',\''+t.name+'\',this.checked)"><span class="slider"></span></label></div>';
+    html += '<div class="tool-card-mini" style="cursor:default;">' +
+      '<div class="tool-mini-icon">' +
+        '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2 z"/></svg>' +
+      '</div>' +
+      '<div class="t-title">'+t.name+'</div>' +
+      '<div class="t-desc">'+t.tag+'</div>' +
+      '<div style="margin-top:6px;">' +
+        '<label class="switch-toggle"><input type="checkbox" '+checked+' onchange="toggleTool(\''+t.key+'\',\''+t.name+'\',this.checked)"><span class="slider"></span></label>' +
+      '</div>' +
+    '</div>';
   });
+  html += '</div>';
   document.getElementById('toolList').innerHTML = html;
 }
 
